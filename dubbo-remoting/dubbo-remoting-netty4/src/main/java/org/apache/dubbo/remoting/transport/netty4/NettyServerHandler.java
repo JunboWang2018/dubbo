@@ -49,6 +49,10 @@ public class NettyServerHandler extends ChannelDuplexHandler {
 
     private final ChannelHandler handler;
 
+    public Map<String, Channel> getChannels() {
+        return channels;
+    }
+
     public NettyServerHandler(URL url, ChannelHandler handler) {
         if (url == null) {
             throw new IllegalArgumentException("url == null");
@@ -58,10 +62,6 @@ public class NettyServerHandler extends ChannelDuplexHandler {
         }
         this.url = url;
         this.handler = handler;
-    }
-
-    public Map<String, Channel> getChannels() {
-        return channels;
     }
 
     @Override

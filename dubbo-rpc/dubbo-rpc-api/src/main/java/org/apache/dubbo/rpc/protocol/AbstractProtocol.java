@@ -45,7 +45,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.VERSION_KEY;
 public abstract class AbstractProtocol implements Protocol {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-
+    /** 服务端将 <key, exporter> 键值对放入缓存中。 后面收到请求时，根据这个映射关系，调用相关的invoker */
     protected final Map<String, Exporter<?>> exporterMap = new ConcurrentHashMap<String, Exporter<?>>();
 
     /**

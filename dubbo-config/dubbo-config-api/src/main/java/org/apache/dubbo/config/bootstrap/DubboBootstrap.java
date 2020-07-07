@@ -755,7 +755,7 @@ public class DubboBootstrap extends GenericEventListener {
                 //3. Register the local ServiceInstance if required
                 registerServiceInstance();
             }
-
+            // tony：这里面是构建代理对象等事项，如果是spring框架集成，这一步在集成的时候已经做了。 此处主要是考虑到dubbo还有非框架集成的场景，内部原理一样不再赘述
             referServices();
             if (asyncExportingFutures.size() > 0) {
                 new Thread(() -> {
@@ -931,11 +931,11 @@ public class DubboBootstrap extends GenericEventListener {
             // TODO, compatible with ServiceConfig.export()
             ServiceConfig serviceConfig = (ServiceConfig) sc;
             serviceConfig.setBootstrap(this);
-
+            // 准备导出服务
             if (exportAsync) {
                 ExecutorService executor = executorRepository.getServiceExporterExecutor();
                 Future<?> future = executor.submit(() -> {
-                    sc.export();
+                    sc.export(); // 调用ServiceConfig.export()方法
                     exportedServices.add(sc);
                 });
                 asyncExportingFutures.add(future);

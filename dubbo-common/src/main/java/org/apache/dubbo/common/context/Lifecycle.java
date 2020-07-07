@@ -18,14 +18,14 @@ package org.apache.dubbo.common.context;
 
 /**
  * The Lifecycle of Dubbo component
- *
+ * tony:Dubbo组件的生命周期。为每一个对象定义一个完整的生命周期，方便框架管理资源的初始化和释放等。
  * @since 2.7.5
  */
 public interface Lifecycle {
 
     /**
      * Initialize the component before {@link #start() start}
-     *
+     * // SPI加载的时候初始化
      * @return current {@link Lifecycle}
      * @throws IllegalStateException
      */

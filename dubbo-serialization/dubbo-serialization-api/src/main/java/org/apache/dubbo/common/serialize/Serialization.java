@@ -32,7 +32,7 @@ import java.io.OutputStream;
  *     e.g. &lt;dubbo:protocol serialization="xxx" /&gt;
  * </pre>
  */
-@SPI("hessian2")
+@SPI("hessian2")  // 序列化接口，默认hessian2
 public interface Serialization {
 
     /**

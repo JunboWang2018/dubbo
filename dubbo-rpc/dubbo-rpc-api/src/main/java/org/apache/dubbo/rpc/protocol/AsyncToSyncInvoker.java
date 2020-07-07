@@ -46,7 +46,7 @@ public class AsyncToSyncInvoker<T> implements Invoker<T> {
     public Class<T> getInterface() {
         return invoker.getInterface();
     }
-
+    // tony：如果是同步调用模式，则需要等待结果返回
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         Result asyncResult = invoker.invoke(invocation);

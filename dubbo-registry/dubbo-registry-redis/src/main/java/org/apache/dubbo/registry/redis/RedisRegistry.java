@@ -297,8 +297,8 @@ public class RedisRegistry extends FailbackRegistry {
 
     @Override
     public void doRegister(URL url) {
-        String key = toCategoryPath(url);
-        String value = url.toFullString();
+        String key = toCategoryPath(url);// tony:生成一个key,示例：/dubbo/com.study.dubbo.sms.api.SmsService/providers
+        String value = url.toFullString();// value 就是这个服务提供者url参数
         String expire = String.valueOf(System.currentTimeMillis() + expirePeriod);
         boolean success = false;
         RpcException exception = null;
@@ -306,8 +306,8 @@ public class RedisRegistry extends FailbackRegistry {
             Pool<Jedis> jedisPool = entry.getValue();
             try {
                 try (Jedis jedis = jedisPool.getResource()) {
-                    jedis.hset(key, value, expire);
-                    jedis.publish(key, REGISTER);
+                    jedis.hset(key, value, expire); // hash类型存放，带有超时时间
+                    jedis.publish(key, REGISTER);// 通过redis sub/pub 机制 ，发布一个register消息
                     success = true;
                     if (!replicate) {
                         break; //  If the server side has synchronized data, just write a single machine

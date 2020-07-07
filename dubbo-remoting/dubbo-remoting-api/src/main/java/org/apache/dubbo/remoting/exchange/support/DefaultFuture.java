@@ -199,7 +199,7 @@ public class DefaultFuture extends CompletableFuture<Object> {
     public void cancel() {
         this.cancel(true);
     }
-
+    /** tony:接收返回值，根据响应的结果 */
     private void doReceived(Response res) {
         if (res == null) {
             throw new IllegalStateException("response cannot be null");

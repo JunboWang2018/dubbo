@@ -47,7 +47,7 @@ public class DubboLifecycleComponentApplicationListener extends OneTimeExecution
      * @since 2.7.6
      */
     public static final String BEAN_NAME = "dubboLifecycleComponentApplicationListener";
-
+    // 把所有需要进行声明周期管理
     private List<Lifecycle> lifecycleComponents = emptyList();
 
     @Override
@@ -58,14 +58,14 @@ public class DubboLifecycleComponentApplicationListener extends OneTimeExecution
             onContextClosedEvent((ContextClosedEvent) event);
         }
     }
-
+    // 当spring容器启动的时候的时候执行
     protected void onContextRefreshedEvent(ContextRefreshedEvent event) {
-        initLifecycleComponents(event);
-        startLifecycleComponents();
+        initLifecycleComponents(event); // 初始化 - 找到所有需要进行生命周期管理的bean
+        startLifecycleComponents(); // 循环调用他们的start方法
     }
-
+    // 当spring容器关闭的时候执行
     protected void onContextClosedEvent(ContextClosedEvent event) {
-        destroyLifecycleComponents();
+        destroyLifecycleComponents();// 循环调用他们的destroy方法
     }
 
     private void initLifecycleComponents(ContextRefreshedEvent event) {
@@ -75,7 +75,7 @@ public class DubboLifecycleComponentApplicationListener extends OneTimeExecution
         // load the Beans of Lifecycle from ApplicationContext
         loadLifecycleComponents(lifecycleComponents, context);
     }
-
+    // tony： 使用spring的工具，找到所有实现 Lifecycle接口的bean
     private void loadLifecycleComponents(List<Lifecycle> lifecycleComponents, ApplicationContext context) {
         lifecycleComponents.addAll(beansOfTypeIncludingAncestors(context, Lifecycle.class).values());
     }

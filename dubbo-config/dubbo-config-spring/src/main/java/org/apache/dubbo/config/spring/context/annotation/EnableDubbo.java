@@ -41,9 +41,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-@EnableDubboConfig
-@DubboComponentScan
-public @interface EnableDubbo {
+@EnableDubboConfig // 用于将 配置文件 绑定到具体的java对象。且将对象交给spring管理【支线流程】
+@DubboComponentScan // Dubbo相关组件的扫描和创建【主线流程】
+public @interface EnableDubbo { // 启用Dubbo相关组件功能 一拖二
 
     /**
      * Base packages to scan for annotated @Service classes.

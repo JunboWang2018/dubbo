@@ -40,7 +40,7 @@ import static org.springframework.beans.factory.support.BeanDefinitionBuilder.ro
 
 /**
  * Dubbo {@link DubboComponentScan} Bean Registrar
- *
+ * TONY：Dubbo这个拓展的目的就是让@Service注解的类交给Spring去托管【定义+创建对象+依赖注入】
  * @see Service
  * @see DubboComponentScan
  * @see ImportBeanDefinitionRegistrar
@@ -52,11 +52,11 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-
+        // 获取包
         Set<String> packagesToScan = getPackagesToScan(importingClassMetadata);
-
+        // 此处是把service相关的bean定义全部注册到spring容器中。
         registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);
-
+        // 这里面把一些公共的组件都注册了一遍【上面的方法只是注册了一个ServiceAnnotationBeanPostProcessor】
         // @since 2.7.6 Register the common beans
         registerCommonBeans(registry);
     }
@@ -69,15 +69,15 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
      * @since 2.5.8
      */
     private void registerServiceAnnotationBeanPostProcessor(Set<String> packagesToScan, BeanDefinitionRegistry registry) {
-
+        // 此处定义的bean，本质还是个工具型的配置类，主要是用来处理 dubbo相关service相关注解
         BeanDefinitionBuilder builder = rootBeanDefinition(ServiceAnnotationBeanPostProcessor.class);
-        builder.addConstructorArgValue(packagesToScan);
+        builder.addConstructorArgValue(packagesToScan);//ServiceAnnotationBeanPostProcessor构造函数参数
         builder.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-        AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
-        BeanDefinitionReaderUtils.registerWithGeneratedName(beanDefinition, registry);
+        AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();//构建一个beanDefinition
+        BeanDefinitionReaderUtils.registerWithGeneratedName(beanDefinition, registry);// 注册+bean名称交由spring生成
 
     }
-
+    /** tony: 获取@DubboComponentScan注解所配置的信息，那些包需要扫描*/
     private Set<String> getPackagesToScan(AnnotationMetadata metadata) {
         AnnotationAttributes attributes = AnnotationAttributes.fromMap(
                 metadata.getAnnotationAttributes(DubboComponentScan.class.getName()));

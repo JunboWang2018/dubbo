@@ -185,11 +185,11 @@ public class RpcUtils {
     }
 
     public static InvokeMode getInvokeMode(URL url, Invocation inv) {
-        if (isReturnTypeFuture(inv)) {
+        if (isReturnTypeFuture(inv)) {// 如果方法返回值本身就是CompletableFuture
             return InvokeMode.FUTURE;
-        } else if (isAsync(url, inv)) {
+        } else if (isAsync(url, inv)) {// 【默认不配置就是异步】如果消费者async参数配置为异步或者方法级别配置了
             return InvokeMode.ASYNC;
-        } else {
+        } else {// tony: 否则为同步模式
             return InvokeMode.SYNC;
         }
     }

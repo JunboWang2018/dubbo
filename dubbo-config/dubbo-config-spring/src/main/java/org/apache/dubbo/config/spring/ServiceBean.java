@@ -34,7 +34,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 
 /**
  * ServiceFactoryBean
- *
+ * tony：用了@Service注解后，可以理解为spring中有两个bean，一个是实现类的实例，一个bean针对这个服务的配置信息serviceBean
  * @export
  */
 public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean,

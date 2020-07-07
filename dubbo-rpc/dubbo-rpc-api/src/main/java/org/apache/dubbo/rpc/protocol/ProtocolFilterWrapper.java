@@ -149,7 +149,7 @@ public class ProtocolFilterWrapper implements Protocol {
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (UrlUtils.isRegistry(invoker.getUrl())) {
             return protocol.export(invoker);
-        }
+        }// export之前，把invoker对象做一个封装，循环遍历filter，对invoker进行一个包装，在原始的invoker执行前后，加入新的逻辑
         return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
     }
 

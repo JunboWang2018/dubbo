@@ -237,10 +237,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         removeFailedUnregistered(url);
         try {
             // Sending a registration request to the server side
-            doRegister(url);
+            doRegister(url);// 模板方法，由子类实现。 zookeeper实现看官网，我们可以看看redis
         } catch (Exception e) {
             Throwable t = e;
-
+            // 出异常注册中心不能用,如果 check 参数 = true 将会直接抛出异常。
             // If the startup detection is opened, the Exception is thrown directly.
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
@@ -254,7 +254,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             } else {
                 logger.error("Failed to register " + url + ", waiting for retry, cause: " + t.getMessage(), t);
             }
-
+            // 记录注册失败的链接
             // Record a failed registration request to a failed list, retry regularly
             addFailedRegistered(url);
         }

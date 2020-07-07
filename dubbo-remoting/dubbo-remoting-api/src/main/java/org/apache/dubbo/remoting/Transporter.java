@@ -28,7 +28,7 @@ import org.apache.dubbo.common.extension.SPI;
  *
  * @see org.apache.dubbo.remoting.Transporters
  */
-@SPI("netty")
+@SPI("netty") // 默认netty
 public interface Transporter {
 
     /**
@@ -40,7 +40,7 @@ public interface Transporter {
      * @throws RemotingException
      * @see org.apache.dubbo.remoting.Transporters#bind(URL, ChannelHandler...)
      */
-    @Adaptive({Constants.SERVER_KEY, Constants.TRANSPORTER_KEY})
+    @Adaptive({Constants.SERVER_KEY, Constants.TRANSPORTER_KEY})//tony: 自适应的场景中,调用的时候根据url中的参数决定选哪一个实现
     RemotingServer bind(URL url, ChannelHandler handler) throws RemotingException;
 
     /**
@@ -52,7 +52,7 @@ public interface Transporter {
      * @throws RemotingException
      * @see org.apache.dubbo.remoting.Transporters#connect(URL, ChannelHandler...)
      */
-    @Adaptive({Constants.CLIENT_KEY, Constants.TRANSPORTER_KEY})
+    @Adaptive({Constants.CLIENT_KEY, Constants.TRANSPORTER_KEY})//tony: 自适应的场景中,调用的时候根据url中指定的参数决定选哪一个实现
     Client connect(URL url, ChannelHandler handler) throws RemotingException;
 
 }

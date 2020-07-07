@@ -31,13 +31,13 @@ import java.util.Set;
  * @since 2.5.8
  * @deprecated Recommend {@link ServiceClassPostProcessor} as the substitute
  */
-@Deprecated
+@Deprecated // 标记废弃了， 这个子类写出来没干什么事情
 public class ServiceAnnotationBeanPostProcessor extends ServiceClassPostProcessor {
 
     public ServiceAnnotationBeanPostProcessor(String... packagesToScan) {
         this(Arrays.asList(packagesToScan));
     }
-
+    // 构造函数 - 包扫描路径
     public ServiceAnnotationBeanPostProcessor(Collection<String> packagesToScan) {
         this(new LinkedHashSet<>(packagesToScan));
     }

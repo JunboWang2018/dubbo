@@ -58,7 +58,7 @@ public interface ExchangeChannel extends Channel {
     CompletableFuture<Object> request(Object request, ExecutorService executor) throws RemotingException;
 
     /**
-     * send request.
+     * send request. 发数据，同时还要接收响应
      *
      * @param request
      * @param timeout

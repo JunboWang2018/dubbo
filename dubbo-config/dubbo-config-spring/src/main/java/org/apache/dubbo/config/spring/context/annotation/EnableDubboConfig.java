@@ -66,7 +66,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-@Import(DubboConfigConfigurationRegistrar.class)
+@Import(DubboConfigConfigurationRegistrar.class) // tony:引入一个配置类,把配置文件里边的内容，绑定到bean上面
 public @interface EnableDubboConfig {
 
     /**

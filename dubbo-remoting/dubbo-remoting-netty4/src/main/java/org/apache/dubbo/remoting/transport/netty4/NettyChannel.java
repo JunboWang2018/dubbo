@@ -159,11 +159,11 @@ final class NettyChannel extends AbstractChannel {
         boolean success = true;
         int timeout = 0;
         try {
-            ChannelFuture future = channel.writeAndFlush(message);
-            if (sent) {
+            ChannelFuture future = channel.writeAndFlush(message);// tony:发送数据 -- future用于判断发送完毕没有
+            if (sent) {// 如果sent参数为true，则等待数据发送完毕
                 // wait timeout ms
                 timeout = getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
-                success = future.await(timeout);
+                success = future.await(timeout);// 如果超时就会抛异常
             }
             Throwable cause = future.cause();
             if (cause != null) {

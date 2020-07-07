@@ -54,7 +54,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
         this.handler = handler;
     }
-
+    /** 此方法处理响应 */
     static void handleResponse(Channel channel, Response response) throws RemotingException {
         if (response != null && !response.isHeartbeat()) {
             DefaultFuture.received(channel, response);
@@ -74,9 +74,9 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
             channel.setAttribute(Constants.CHANNEL_ATTRIBUTE_READONLY_KEY, Boolean.TRUE);
         }
     }
-
+    /** 双向通信，需要返回值 */
     void handleRequest(final ExchangeChannel channel, Request req) throws RemotingException {
-        Response res = new Response(req.getId(), req.getVersion());
+        Response res = new Response(req.getId(), req.getVersion());// response对象里面保留好请求ID
         if (req.isBroken()) {
             Object data = req.getData();
 
@@ -96,18 +96,18 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
         // find handler by message class.
         Object msg = req.getData();
-        try {
+        try {// 调用协议里面定义的那个handler，处理之后返回一个CompletableFuture
             CompletionStage<Object> future = handler.reply(channel, msg);
-            future.whenComplete((appResult, t) -> {
+            future.whenComplete((appResult, t) -> {// 当future中有结果时，这段代码会被执行
                 try {
-                    if (t == null) {
+                    if (t == null) {// t代表异常Throwable，为空代表请求没问题
                         res.setStatus(Response.OK);
                         res.setResult(appResult);
-                    } else {
+                    } else {// 如果Throwable不为空，代表执行出错了
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
-                    channel.send(res);
+                    channel.send(res);// tony: 最后发送response对象
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
                 }
@@ -165,21 +165,21 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
         final ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
-        if (message instanceof Request) {
+        if (message instanceof Request) {// tony: 如果是一个请求
             // handle request.
             Request request = (Request) message;
             if (request.isEvent()) {
                 handlerEvent(channel, request);
             } else {
-                if (request.isTwoWay()) {
+                if (request.isTwoWay()) {// 如果是双向通信，意味着需要返回值
                     handleRequest(exchangeChannel, request);
-                } else {
+                } else {// tony: 单向通信，调用完毕即可，无需返回
                     handler.received(exchangeChannel, request.getData());
                 }
             }
-        } else if (message instanceof Response) {
+        } else if (message instanceof Response) {// tony: 如果是一个服务端的响应
             handleResponse(channel, (Response) message);
-        } else if (message instanceof String) {
+        } else if (message instanceof String) {// tony:否则不能识别，不处理
             if (isClientSide(channel)) {
                 Exception e = new Exception("Dubbo client can not supported string message: " + message + " in channel: " + channel + ", url: " + channel.getUrl());
                 logger.error(e.getMessage(), e);

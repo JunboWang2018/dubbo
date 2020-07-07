@@ -174,7 +174,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         return urls;
     }
 
-    /**
+    /** tony: 检测配置中心是否配置，使用配置文件配置的所有注册中心 或者 单独指定的 注册中心
      * Check whether the registry config is exists, and then conversion it to {@link RegistryConfig}
      */
     public void checkRegistry() {
@@ -187,7 +187,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             }
         }
     }
-
+    /** 添加 dubbo版本信息、pid 等信息到 map 中 */
     public static void appendRuntimeParameters(Map<String, String> map) {
         map.put(DUBBO_VERSION_KEY, Version.getProtocolVersion());
         map.put(RELEASE_KEY, Version.getVersion());

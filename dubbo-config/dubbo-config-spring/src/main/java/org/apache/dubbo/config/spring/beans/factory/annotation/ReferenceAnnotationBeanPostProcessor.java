@@ -53,7 +53,7 @@ import static org.springframework.util.StringUtils.hasText;
 /**
  * {@link org.springframework.beans.factory.config.BeanPostProcessor} implementation
  * that Consumer service {@link Reference} annotated fields
- *
+ * tony：处理使用了DubboReference注解的相关属性。 继承了一个alibaba的jar包..【略混乱，后续估计会调整到apache】
  * @see DubboReference
  * @see Reference
  * @see com.alibaba.dubbo.config.annotation.Reference
@@ -68,7 +68,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
     public static final String BEAN_NAME = "referenceAnnotationBeanPostProcessor";
 
     /**
-     * Cache size
+     * Cache size tony: 同一个service，多处引用。把代理对象缓存起来，减少对象的创建
      */
     private static final int CACHE_SIZE = Integer.getInteger(BEAN_NAME + ".cache.size", 32);
 
@@ -88,7 +88,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
 
     /**
      * {@link com.alibaba.dubbo.config.annotation.Reference @com.alibaba.dubbo.config.annotation.Reference} has been supported since 2.7.3
-     * <p>
+     * <p> tony: 此处显式的定义了，哪几个注解是dubbo中代表 服务引用 的注解
      * {@link DubboReference @DubboReference} has been supported since 2.7.7
      */
     public ReferenceAnnotationBeanPostProcessor() {
@@ -128,22 +128,22 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
     @Override
     protected Object doGetInjectedBean(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType,
                                        InjectionMetadata.InjectedElement injectedElement) throws Exception {
-        /**
+        /** tony: 这个名字就是在spring上下文中的bean名称。
          * The name of bean that annotated Dubbo's {@link Service @Service} in local Spring {@link ApplicationContext}
          */
         String referencedBeanName = buildReferencedBeanName(attributes, injectedType);
 
-        /**
+        /** tony: Reference注解期望注入的bean名称。【不仅仅是类名，还包括service的版本号，group这些】
          * The name of bean that is declared by {@link Reference @Reference} annotation injection
          */
         String referenceBeanName = getReferenceBeanName(attributes, injectedType);
-
+        // tony： 此处构建一个 ReferenceBean可以理解为 消费者端 生成代理对象的配置信息【此处有缓存，并非每次都创建新的】
         ReferenceBean referenceBean = buildReferenceBeanIfAbsent(referenceBeanName, attributes, injectedType);
-
+        // 判断当前spring上下文中是否存在此bean
         boolean localServiceBean = isLocalServiceBean(referencedBeanName, referenceBean, attributes);
-
+        // 把ReferenceBean 加入到spring容器
         registerReferenceBean(referencedBeanName, referenceBean, attributes, localServiceBean, injectedType);
-
+        // 缓存这次注入信息【记录此次通过 属性 或者 方法 注入了一个ReferenceBean】【暂时没看到作用】
         cacheInjectedReferenceBean(referenceBean, injectedElement);
 
         return getOrCreateProxy(referencedBeanName, referenceBean, localServiceBean, injectedType);
@@ -180,7 +180,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
             beanFactory.registerAlias(serviceBeanName, beanName);
         } else { // Remote @Service Bean
             if (!beanFactory.containsBean(beanName)) {
-                beanFactory.registerSingleton(beanName, referenceBean);
+                beanFactory.registerSingleton(beanName, referenceBean); // TOny: 把自己的对象，增加到spring容器
             }
         }
     }
@@ -275,9 +275,9 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
         if (localServiceBean) { // If the local @Service Bean exists, build a proxy of Service
             return newProxyInstance(getClassLoader(), new Class[]{serviceInterfaceType},
                     newReferencedBeanInvocationHandler(referencedBeanName));
-        } else {
+        } else {// 如果是远程服务调用，如果服务提供者和服务消费者在一起，则此时export对应的serivce服务
             exportServiceBeanIfNecessary(referencedBeanName); // If the referenced ServiceBean exits, export it immediately
-            return referenceBean.get();
+            return referenceBean.get(); // 返回一个对应的对象 -- tony: 此处就是服务调用时所用的代理对象
         }
     }
 
@@ -285,7 +285,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
     private void exportServiceBeanIfNecessary(String referencedBeanName) {
         if (existsServiceBean(referencedBeanName)) {
             ServiceBean serviceBean = getServiceBean(referencedBeanName);
-            if (!serviceBean.isExported()) {
+            if (!serviceBean.isExported()) { // 判断是否做过export
                 serviceBean.export();
             }
         }
@@ -368,15 +368,15 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
     private ReferenceBean buildReferenceBeanIfAbsent(String referenceBeanName, AnnotationAttributes attributes,
                                                      Class<?> referencedType)
             throws Exception {
-
+        // 缓存中获取，如果缓存存在，则立刻返回
         ReferenceBean<?> referenceBean = referenceBeanCache.get(referenceBeanName);
-
+        // TONY: 如果不存在，则针对这个service引用的定义，创建对应的ReferenceBean
         if (referenceBean == null) {
             ReferenceBeanBuilder beanBuilder = ReferenceBeanBuilder
                     .create(attributes, applicationContext)
                     .interfaceClass(referencedType);
             referenceBean = beanBuilder.build();
-            referenceBeanCache.put(referenceBeanName, referenceBean);
+            referenceBeanCache.put(referenceBeanName, referenceBean); // 放到缓存
         } else if (!referencedType.isAssignableFrom(referenceBean.getInterfaceClass())) {
             throw new IllegalArgumentException("reference bean name " + referenceBeanName + " has been duplicated, but interfaceClass " +
                     referenceBean.getInterfaceClass().getName() + " cannot be assigned to " + referencedType.getName());

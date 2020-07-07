@@ -86,7 +86,7 @@ public class DefaultExecutorRepository implements ExecutorRepository {
         }
         return executor;
     }
-
+    /** 获取对应的线程池ExecutorService，不同的端口不同的线程池 */
     public ExecutorService getExecutor(URL url) {
         String componentKey = EXECUTOR_SERVICE_COMPONENT_KEY;
         if (CONSUMER_SIDE.equalsIgnoreCase(url.getParameter(SIDE_KEY))) {

@@ -120,7 +120,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * b) Reselection, the validation rule for reselection: selected > available. This rule guarantees that
      * the selected invoker has the minimum chance to be one in the previously selected list, and also
      * guarantees this invoker is available.
-     *
+     * tony:此处有两个特性：粘滞连接和负载均衡
      * @param loadbalance load balance policy
      * @param invocation  invocation
      * @param invokers    invoker candidates
@@ -135,10 +135,10 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             return null;
         }
         String methodName = invocation == null ? StringUtils.EMPTY_STRING : invocation.getMethodName();
-
+        // 此处有一个所谓的 粘滞连接，指让服务消费者尽可能的调用同一个服务提供者，除非该提供者挂了再进行切换
         boolean sticky = invokers.get(0).getUrl()
                 .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
-
+        // 这个实现原理，简单来说，记录上一次请求的服务提供者，如果它没挂，则继续请求同一个实例。如果挂了，则通过负载均衡再找一个
         //ignore overloaded method
         if (stickyInvoker != null && !invokers.contains(stickyInvoker)) {
             stickyInvoker = null;
@@ -149,7 +149,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
                 return stickyInvoker;
             }
         }
-
+        // 具体负载均衡的套路
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
         if (sticky) {
@@ -167,8 +167,8 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
-        Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
-
+        Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);// tony：如果实例数量大于1，则通过负载均衡器选择一个
+        // selected 就是上面的invoked 代表已经调用过的，代表这里边的实例是有问题的，就不要去调用，需要重选一次
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
         if ((selected != null && selected.contains(invoker))
                 || (!invoker.isAvailable() && getUrl() != null && availablecheck)) {
@@ -196,7 +196,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
     /**
      * Reselect, use invokers not in `selected` first, if all invokers are in `selected`,
      * just pick an available one using loadbalance policy.
-     *
+     * tony：这个方法可简单的理解为：在做负载均衡之前，排除之前请求出错的实例+不存活的实例 【考虑到消费者可能没有及时接收到服务实例信息的变化，比如注册中心有问题的情况下】
      * @param loadbalance    load balance policy
      * @param invocation     invocation
      * @param invokers       invoker candidates
@@ -242,21 +242,21 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
 
         return null;
     }
-
+    /** 代理调用的实际就是这个invoke方法 */
     @Override
     public Result invoke(final Invocation invocation) throws RpcException {
         checkWhetherDestroyed();
-
+        // 绑定 attachments 到 invocation 中.
         // binding attachments into invocation.
         Map<String, Object> contextAttachments = RpcContext.getContext().getObjectAttachments();
         if (contextAttachments != null && contextAttachments.size() != 0) {
             ((RpcInvocation) invocation).addObjectAttachments(contextAttachments);
         }
-
+        // 列举 Invoker -- 服务目录 Directory.list -- 此处会根据路由规则进行过滤
         List<Invoker<T>> invokers = list(invocation);
-        LoadBalance loadbalance = initLoadBalance(invokers, invocation);
-        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
-        return doInvoke(invocation, invokers, loadbalance);
+        LoadBalance loadbalance = initLoadBalance(invokers, invocation);// 获取对应的负载均衡策略
+        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation); // 如果是异步调用，则在invocation对象中设置一个请求ID
+        return doInvoke(invocation, invokers, loadbalance);// 调用模板方法
     }
 
     protected void checkWhetherDestroyed() {
@@ -297,7 +297,7 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * if invokers is not empty, init from the first invoke's url and invocation
      * if invokes is empty, init a default LoadBalance(RandomLoadBalance)
      * </p>
-     *
+     * tony: 根据invoke 选择对应的负载均衡策略
      * @param invokers   invokers
      * @param invocation invocation
      * @return LoadBalance instance. if not need init, return null.

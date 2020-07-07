@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.dubbo.common.BaseServiceMetadata.interfaceFromServiceKey;
 import static org.apache.dubbo.common.BaseServiceMetadata.versionFromServiceKey;
-
+/** tony:顾名思义，这玩意就是个仓库，全部保存起来 */
 public class ServiceRepository extends LifecycleAdapter implements FrameworkExt {
 
     public static final String NAME = "repository";

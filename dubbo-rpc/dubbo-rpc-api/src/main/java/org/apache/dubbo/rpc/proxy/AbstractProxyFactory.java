@@ -72,13 +72,13 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
                 // ignore
             }
         }
-
+        // 指定代理对象 有哪些哪些接口
         interfaces.add(invoker.getInterface());
         interfaces.addAll(Arrays.asList(INTERNAL_INTERFACES));
-
+        // tony:创建 代理对象,本质就是生成一个代理对象，当调用里面方法的时候，根据调用的信息，生成RpcInvocation对象，然后调用Invoker的invoke方法
         return getProxy(invoker, interfaces.toArray(new Class<?>[0]));
     }
-
+    // tony: JavassistProxyFactory 看官网即可
     public abstract <T> T getProxy(Invoker<T> invoker, Class<?>[] types);
 
 }

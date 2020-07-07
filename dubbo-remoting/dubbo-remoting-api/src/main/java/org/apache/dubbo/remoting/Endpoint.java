@@ -52,7 +52,7 @@ public interface Endpoint {
     InetSocketAddress getLocalAddress();
 
     /**
-     * send message.
+     * send message. 只管发数据
      *
      * @param message
      * @throws RemotingException
@@ -60,7 +60,7 @@ public interface Endpoint {
     void send(Object message) throws RemotingException;
 
     /**
-     * send message.
+     * send message. 只管发数据
      *
      * @param message
      * @param sent    already sent to socket?

@@ -74,37 +74,37 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
     public DubboInvoker(Class<T> serviceType, URL url, ExchangeClient[] clients, Set<Invoker<?>> invokers) {
         super(serviceType, url, new String[]{INTERFACE_KEY, GROUP_KEY, TOKEN_KEY});
         this.clients = clients;
-        // get version.
+        // get version. 调用服务对应的版本号
         this.version = url.getParameter(VERSION_KEY, "0.0.0");
         this.invokers = invokers;
     }
-
+    /** dubbo现在都是异步调用了，这个result内部就是获取值就是通过future */
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
-        RpcInvocation inv = (RpcInvocation) invocation;
+        RpcInvocation inv = (RpcInvocation) invocation;// 这个对象的内容会传输，就是调用方法的上下文
         final String methodName = RpcUtils.getMethodName(invocation);
-        inv.setAttachment(PATH_KEY, getUrl().getPath());
+        inv.setAttachment(PATH_KEY, getUrl().getPath());// 设置 path 和 version 到 attachment 中
         inv.setAttachment(VERSION_KEY, version);
-
+        // 从 clients 数组中获取 ExchangeClient
         ExchangeClient currentClient;
         if (clients.length == 1) {
             currentClient = clients[0];
-        } else {
+        } else {// tony： 如果消费者和该服务器有多个connection，就轮询调用。
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
-            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);// isOneway 为 true，表示“单向”通信
             int timeout = calculateTimeout(invocation, methodName);
-            if (isOneway) {
-                boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
-                currentClient.send(inv, isSent);
-                return AsyncRpcResult.newDefaultAsyncResult(invocation);
-            } else {
+            if (isOneway) {// “单向” 代表没有返回值啊
+                boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);// isSent发数据的时候要不要等待发送完毕
+                currentClient.send(inv, isSent);// tony:把RpcInvocation发送出去了，具体发送了什么就要看 协议 编码encode部分的 实现
+                return AsyncRpcResult.newDefaultAsyncResult(invocation);// tony：返回一个包装过的future。思考一下：为什么结果里面还要附带invocation信息呢？
+            } else {// tony: 否则代表有返回值 -- 有结果的返回值和上面的略有不同
                 ExecutorService executor = getCallbackExecutor(getUrl(), inv);
-                CompletableFuture<AppResponse> appResponseFuture =
-                        currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);
+                CompletableFuture<AppResponse> appResponseFuture = // tony: appResponseFuture用于接收服务器端返回的结果
+                        currentClient.request(inv, timeout, executor).thenApply(obj -> (AppResponse) obj);// 默认HeaderExchangeClient
                 // save for 2.6.x compatibility, for example, TraceFilter in Zipkin uses com.alibaba.xxx.FutureAdapter
-                FutureContext.getContext().setCompatibleFuture(appResponseFuture);
+                FutureContext.getContext().setCompatibleFuture(appResponseFuture);// 将这个future保存在rpc上下文
                 AsyncRpcResult result = new AsyncRpcResult(appResponseFuture, inv);
                 result.setExecutor(executor);
                 return result;

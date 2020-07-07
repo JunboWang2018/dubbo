@@ -39,7 +39,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(DubboComponentScanRegistrar.class)
+@Import(DubboComponentScanRegistrar.class) // 引入一个充当配置的类【扫描和注册】
 public @interface DubboComponentScan {
 
     /**
@@ -65,7 +65,7 @@ public @interface DubboComponentScan {
     /**
      * Type-safe alternative to {@link #basePackages()} for specifying the packages to
      * scan for annotated @Service classes. The package of each class specified will be
-     * scanned.
+     * scanned. tony: 也可以通过指定类，去扫描这个类所在的包
      *
      * @return classes from the base packages to scan
      */

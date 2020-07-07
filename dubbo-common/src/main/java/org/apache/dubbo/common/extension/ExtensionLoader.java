@@ -103,7 +103,7 @@ public class ExtensionLoader<T> {
     private String cachedDefaultName;
     private volatile Throwable createAdaptiveInstanceError;
 
-    private Set<Class<?>> cachedWrapperClasses;
+    private Set<Class<?>> cachedWrapperClasses; // tony：如果某个接口的具体实现类，它的构造函数中有一个该类型的参数，则为装饰器
 
     private Map<String, IllegalStateException> exceptions = new ConcurrentHashMap<>();
 
@@ -620,20 +620,20 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
-        Class<?> clazz = getExtensionClasses().get(name);
+        Class<?> clazz = getExtensionClasses().get(name);// 从配置文件中加载所有的拓展类，可得到“配置项名称”到“配置类”的映射关系表
         if (clazz == null) {
             throw findException(name);
         }
         try {
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
-                EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
+                EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());// 通过反射创建实例
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
-            injectExtension(instance);
-            Set<Class<?>> wrapperClasses = cachedWrapperClasses;
+            injectExtension(instance);// 向实例中注入依赖
+            Set<Class<?>> wrapperClasses = cachedWrapperClasses; // 如果有装饰类，则自动创建装饰器实例
             if (CollectionUtils.isNotEmpty(wrapperClasses)) {
-                for (Class<?> wrapperClass : wrapperClasses) {
+                for (Class<?> wrapperClass : wrapperClasses) {// 循环创建 Wrapper 实例
                     instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
                 }
             }

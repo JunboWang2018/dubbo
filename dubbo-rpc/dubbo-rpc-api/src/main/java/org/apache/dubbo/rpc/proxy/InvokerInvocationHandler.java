@@ -28,7 +28,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 /**
- * InvokerHandler
+ * InvokerHandler jdk代理 -- 这个代理的作用，本质就是生成一个代理对象，当调用里面方法的时候，根据调用的信息，生成RpcInvocation对象，然后调用Invoker的invoke方法
  */
 public class InvokerInvocationHandler implements InvocationHandler {
     private static final Logger logger = LoggerFactory.getLogger(InvokerInvocationHandler.class);
@@ -61,7 +61,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
             }
         } else if (parameterTypes.length == 1 && "equals".equals(methodName)) {
             return invoker.equals(args[0]);
-        }
+        }// tony： 上面这些方法，直接调用后返回。 其他方法，通过组织rpcInvocation对象，通过invoker进行调用
         RpcInvocation rpcInvocation = new RpcInvocation(method, invoker.getInterface().getName(), args);
         String serviceKey = invoker.getUrl().getServiceKey();
         rpcInvocation.setTargetServiceUniqueName(serviceKey);
@@ -70,7 +70,7 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.CONSUMER_MODEL, consumerModel);
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
-
-        return invoker.invoke(rpcInvocation).recreate();
+        // tony:注意： 此处invoker返回的是一个dubbo封装的result对象。 所以通过recreate方法才能获取正在方法执行的结果。目前dubbo改为异步调用，此处result可理解为一个future
+        return invoker.invoke(rpcInvocation).recreate();// recreate - 将dubbo rpc返回的结果 重构为方法返回值所对应的结果
     }
 }

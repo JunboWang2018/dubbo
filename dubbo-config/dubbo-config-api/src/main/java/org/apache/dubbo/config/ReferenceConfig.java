@@ -154,7 +154,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         if (destroyed) {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
-        if (ref == null) {
+        if (ref == null) {// 判断是否已经创建过代理对象，如果已经创建则直接返回,未创建过则初始化
             init();
         }
         return ref;
@@ -181,7 +181,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     }
 
     public synchronized void init() {
-        if (initialized) {
+        if (initialized) {// 避免重复初始化
             return;
         }
 
@@ -196,10 +196,10 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         ConfigValidationUtils.checkMock(interfaceClass, this);
 
         Map<String, String> map = new HashMap<String, String>();
-        map.put(SIDE_KEY, CONSUMER_SIDE);
+        map.put(SIDE_KEY, CONSUMER_SIDE);// tony：标记为消费者
 
         ReferenceConfigBase.appendRuntimeParameters(map);
-        if (!ProtocolUtils.isGeneric(generic)) {
+        if (!ProtocolUtils.isGeneric(generic)) {// 检测是否为泛化接口，如果非泛化调用，添加对应的参数
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put(REVISION_KEY, revision);
@@ -212,7 +212,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             } else {
                 map.put(METHODS_KEY, StringUtils.join(new HashSet<String>(Arrays.asList(methods)), COMMA_SEPARATOR));
             }
-        }
+        }// 添加各种参数，和服务提供者类似
         map.put(INTERFACE_KEY, interfaceName);
         AbstractConfig.appendParameters(map, getMetrics());
         AbstractConfig.appendParameters(map, getApplication());
@@ -244,7 +244,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 }
             }
         }
-
+        // 获取服务消费者 ip 地址
         String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);
         if (StringUtils.isEmpty(hostToRegistry)) {
             hostToRegistry = NetUtils.getLocalHost();
@@ -254,7 +254,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         map.put(REGISTER_IP_KEY, hostToRegistry);
 
         serviceMetadata.getAttachments().putAll(map);
-
+        // 创建代理类
         ref = createProxy(map);
 
         serviceMetadata.setTarget(ref);
@@ -265,7 +265,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
         initialized = true;
 
-        // dispatch a ReferenceConfigInitializedEvent since 2.7.4
+        // dispatch a ReferenceConfigInitializedEvent since 2.7.4 -- 发布事件 -- Dubbo为了朝更大的框架进发，不断增加和新增拓展
         dispatch(new ReferenceConfigInitializedEvent(this, invoker));
     }
 
@@ -278,7 +278,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
         } else {
-            urls.clear();
+            urls.clear(); // tony: 下面这个地址可以是注册中心，也可以是直连。如果 服务引用配置中的url配置了值，代表需要直连
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
@@ -298,13 +298,13 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 // if protocols not injvm checkRegistry
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
                     checkRegistry();
-                    List<URL> us = ConfigValidationUtils.loadRegistries(this, false);
+                    List<URL> us = ConfigValidationUtils.loadRegistries(this, false); // 加载注册中心 url
                     if (CollectionUtils.isNotEmpty(us)) {
-                        for (URL u : us) {
+                        for (URL u : us) {// tony：注意此处的url是注册中心，示例：registry://127.0.0.1:6379/org.apache.dubbo.registry.RegistryService?application=order-service&dubbo=2.0.2&pid=19204&qos.enable=false&registry=redis&release=2.7.7&timestamp=1594118020308
                             URL monitorUrl = ConfigValidationUtils.loadMonitor(this, u);
                             if (monitorUrl != null) {
                                 map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
-                            }
+                            }// 下面往url中添加的参数，是服务引用相关的
                             urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         }
                     }
@@ -314,9 +314,9 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 }
             }
 
-            if (urls.size() == 1) {
+            if (urls.size() == 1) {// 如果只有一个注册中心或直连，则用这个方法
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
-            } else {
+            } else {// 多个注册中心或多个服务提供者，或者两者混合
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null;
                 for (URL url : urls) {
@@ -335,7 +335,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                 }
             }
         }
-
+        // tony： 启动时检测服务存活状态
         if (shouldCheck() && !invoker.isAvailable()) {
             invoker.destroy();
             throw new IllegalStateException("Failed to check the status of the service "
@@ -362,7 +362,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             URL consumerURL = new URL(CONSUMER_PROTOCOL, map.remove(REGISTER_IP_KEY), 0, map.get(INTERFACE_KEY), map);
             metadataService.publishServiceDefinition(consumerURL);
         }
-        // create service proxy
+        // create service proxy tony：创建一个代理对象。这恶
         return (T) PROXY_FACTORY.getProxy(invoker, ProtocolUtils.isGeneric(generic));
     }
 
@@ -428,7 +428,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
      * 2. then if a url is specified, then assume it's a remote call
      * 3. otherwise, check scope parameter
      * 4. if scope is not specified but the target service is provided in the same JVM, then prefer to make the local
-     * call, which is the default behavior
+     * call, which is the default behavior -- tony: 根据 url 的协议、scope 以及 injvm 等参数检测是否需要本地引用
      */
     protected boolean shouldJvmRefer(Map<String, String> map) {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
@@ -438,7 +438,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             if (url != null && url.length() > 0) {
                 isJvmRefer = false;
             } else {
-                // by default, reference local service if there is
+                // by default, reference local service if there is // 用户显式配置了 scope=local，此时 isInjvmRefer 返回 true
                 isJvmRefer = InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl);
             }
         } else {

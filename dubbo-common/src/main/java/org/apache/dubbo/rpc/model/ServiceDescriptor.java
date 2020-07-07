@@ -29,7 +29,7 @@ import java.util.Set;
 
 /**
  * ServiceModel and ServiceMetadata are to some extend duplicated with each other.
- * We should merge them in the future.
+ * We should merge them in the future. // 这个类，包含了最详细的service描述
  */
 public class ServiceDescriptor {
     private final String serviceName;

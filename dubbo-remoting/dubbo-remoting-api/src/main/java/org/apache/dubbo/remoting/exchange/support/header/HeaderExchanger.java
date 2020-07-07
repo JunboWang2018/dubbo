@@ -33,12 +33,12 @@ import org.apache.dubbo.remoting.transport.DecodeHandler;
 public class HeaderExchanger implements Exchanger {
 
     public static final String NAME = "header";
-
+    /** 创建 HeaderExchangeClient 实例，该方法做了三件事：创建 HeaderExchangeHandler、DecodeHandler，调用Transporters.bind*/
     @Override
     public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
         return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
     }
-
+    /** 创建 HeaderExchangeServer 实例，该方法做了三件事：创建 HeaderExchangeHandler、DecodeHandler，调用Transporters.bind*/
     @Override
     public ExchangeServer bind(URL url, ExchangeHandler handler) throws RemotingException {
         return new HeaderExchangeServer(Transporters.bind(url, new DecodeHandler(new HeaderExchangeHandler(handler))));

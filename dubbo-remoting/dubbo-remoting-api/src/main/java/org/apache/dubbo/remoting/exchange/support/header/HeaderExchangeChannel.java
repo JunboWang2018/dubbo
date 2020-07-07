@@ -127,11 +127,11 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         }
         // create request.
         Request req = new Request();
-        req.setVersion(Version.getProtocolVersion());
-        req.setTwoWay(true);
-        req.setData(request);
+        req.setVersion(Version.getProtocolVersion()); //  协议版本
+        req.setTwoWay(true); // 双向通信，需要有返回值
+        req.setData(request); // tony: 这个参数就是 RPCinvocation对象，
         DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout, executor);
-        try {
+        try {// Tony: 上面这个future创建，此处很重要，创建这个对象的时候，会把请求id和future的映射关系保存起来，收到响应后，给future赋值
             channel.send(req);
         } catch (RemotingException e) {
             future.cancel();

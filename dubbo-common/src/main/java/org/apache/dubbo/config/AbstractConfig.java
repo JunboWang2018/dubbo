@@ -106,7 +106,7 @@ public abstract class AbstractConfig implements Serializable {
         }
         return StringUtils.camelToSplitName(tag, "-");
     }
-
+    // 简单理解：把一个个配置对象变成map键值对的配置
     public static void appendParameters(Map<String, String> parameters, Object config) {
         appendParameters(parameters, config, null);
     }

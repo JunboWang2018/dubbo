@@ -29,14 +29,14 @@ import static org.apache.dubbo.config.spring.util.DubboBeanUtils.registerCommonB
 
 /**
  * Dubbo {@link AbstractConfig Config} {@link ImportBeanDefinitionRegistrar register}, which order can be configured
- *
+ * tony:实现了ImportBeanDefinitionRegistrar接口，可以动态的定义bean托管给spring
  * @see EnableDubboConfig
  * @see DubboConfigConfiguration
  * @see Ordered
  * @since 2.5.8
  */
 public class DubboConfigConfigurationRegistrar implements ImportBeanDefinitionRegistrar {
-
+    // tony: 这些在具体bean的实例化之前执行 ，名为 “定义”
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 

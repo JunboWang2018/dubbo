@@ -67,13 +67,13 @@ public class NettyServer extends AbstractServer implements RemotingServer {
      * the boss channel that receive connections and dispatch these to worker channel.
      */
 	private io.netty.channel.Channel channel;
-
+    // 看到这里就是netty套路了
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
         // you can customize name and type of client thread pool by THREAD_NAME_KEY and THREADPOOL_KEY in CommonConstants.
-        // the handler will be wrapped: MultiMessageHandler->HeartbeatHandler->handler
+        // the handler will be wrapped: MultiMessageHandler->HeartbeatHandler->handler tony:调用父类构造方法，你可以指定线程相关参数，也是通过url传输过来的
         super(ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME), ChannelHandlers.wrap(handler, url));
     }
 
@@ -84,13 +84,13 @@ public class NettyServer extends AbstractServer implements RemotingServer {
      */
     @Override
     protected void doOpen() throws Throwable {
-        bootstrap = new ServerBootstrap();
-
+        bootstrap = new ServerBootstrap();// 创建 ServerBootstrap
+        // 创建 boss 和 worker 线程池
         bossGroup = NettyEventLoopFactory.eventLoopGroup(1, "NettyServerBoss");
         workerGroup = NettyEventLoopFactory.eventLoopGroup(
                 getUrl().getPositiveParameter(IO_THREADS_KEY, Constants.DEFAULT_IO_THREADS),
                 "NettyServerWorker");
-
+        /** 这个handler其实啥也不做，就是一个适配。具体处理逻辑都是当前这个nettyserver，而这个nettyServer实现和继承关系很复杂，它的处理逻辑都在传入进来的handler对象里面 */
         final NettyServerHandler nettyServerHandler = new NettyServerHandler(getUrl(), this);
         channels = nettyServerHandler.getChannels();
 
@@ -103,20 +103,20 @@ public class NettyServer extends AbstractServer implements RemotingServer {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         // FIXME: should we use getTimeout()?
-                        int idleTimeout = UrlUtils.getIdleTimeout(getUrl());
+                        int idleTimeout = UrlUtils.getIdleTimeout(getUrl());// tony:下面这段代码就是创建一个编解码适配器，本质就是之前配置好的codec
                         NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
                         if (getUrl().getParameter(SSL_ENABLED_KEY, false)) {
                             ch.pipeline().addLast("negotiation",
                                     SslHandlerInitializer.sslServerHandler(getUrl(), nettyServerHandler));
                         }
                         ch.pipeline()
-                                .addLast("decoder", adapter.getDecoder())
+                                .addLast("decoder", adapter.getDecoder())// 这个decoder和encoder 本质的处理逻辑都在传进来的codec里边
                                 .addLast("encoder", adapter.getEncoder())
-                                .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS))
-                                .addLast("handler", nettyServerHandler);
+                                .addLast("server-idle-handler", new IdleStateHandler(0, 0, idleTimeout, MILLISECONDS))// tony: 心跳机制
+                                .addLast("handler", nettyServerHandler);// 这个handler，看上面的注释，本质逻辑都是传进来的handler里面
                     }
                 });
-        // bind
+        // bind 绑定到指定的 ip 和端口上
         ChannelFuture channelFuture = bootstrap.bind(getBindAddress());
         channelFuture.syncUninterruptibly();
         channel = channelFuture.channel();

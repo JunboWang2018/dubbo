@@ -35,7 +35,7 @@ public class JdkProxyFactory extends AbstractProxyFactory {
     public <T> T getProxy(Invoker<T> invoker, Class<?>[] interfaces) {
         return (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, new InvokerInvocationHandler(invoker));
     }
-
+    // tony： 这个抽象类，invoke方法，返回的是一个Result对象。把方法执行的返回值，包装了一下
     @Override
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
         return new AbstractProxyInvoker<T>(proxy, type, url) {

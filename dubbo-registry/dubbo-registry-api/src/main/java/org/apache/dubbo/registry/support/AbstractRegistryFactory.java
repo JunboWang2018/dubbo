@@ -96,7 +96,7 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
             LOCK.unlock();
         }
     }
-
+    /** tony:根据url找到对应的注册中心实现,并根据工厂类创建实例 */
     @Override
     public Registry getRegistry(URL url) {
         if (destroyed.get()) {
@@ -113,17 +113,17 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
         String key = createRegistryCacheKey(url);
         // Lock the registry access process to ensure a single instance of the registry
         LOCK.lock();
-        try {
-            Registry registry = REGISTRIES.get(key);
+        try {// tony：注意！ 因为同一类的注册中心可能有多个不同的远程地址，也就会存在多个注册中心实例，所有需要动态创建+缓存
+            Registry registry = REGISTRIES.get(key);// 访问缓存
             if (registry != null) {
                 return registry;
             }
             //create registry by spi/ioc
-            registry = createRegistry(url);
+            registry = createRegistry(url); // 缓存未命中，创建 Registry 实例。zookeeper的实现可以看官网描述，我们可以看看redis的实现
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }
-            REGISTRIES.put(key, registry);
+            REGISTRIES.put(key, registry);// 写入缓存
             return registry;
         } finally {
             // Release the lock

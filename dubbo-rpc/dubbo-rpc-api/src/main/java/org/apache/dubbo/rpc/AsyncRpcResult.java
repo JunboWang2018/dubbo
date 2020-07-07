@@ -304,7 +304,7 @@ public class AsyncRpcResult implements Result {
     public static AsyncRpcResult newDefaultAsyncResult(AppResponse appResponse, Invocation invocation) {
         return new AsyncRpcResult(CompletableFuture.completedFuture(appResponse), invocation);
     }
-
+    /** tony:这个代码很骚气哦，自己创建一个future，然后把值塞进去，然后返回。这样调用者马上可用获取值了。原理参考futuretask的实现 */
     public static AsyncRpcResult newDefaultAsyncResult(Invocation invocation) {
         return newDefaultAsyncResult(null, null, invocation);
     }

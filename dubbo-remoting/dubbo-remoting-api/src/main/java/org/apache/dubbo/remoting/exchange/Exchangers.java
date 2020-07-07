@@ -66,8 +66,8 @@ public class Exchangers {
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
-        url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
-        return getExchanger(url).bind(url, handler);
+        url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");// tony:配置编解码器，如果前面没指定，这个时候加上exchange
+        return getExchanger(url).bind(url, handler);// 获取 Exchanger，默认为 HeaderExchanger。  紧接着调用 HeaderExchanger 的 bind 方法创建 ExchangeServer 实例
     }
 
     public static ExchangeClient connect(String url) throws RemotingException {
@@ -105,16 +105,16 @@ public class Exchangers {
         if (handler == null) {
             throw new IllegalArgumentException("handler == null");
         }
-        url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");// tony:配置编解码器，如果前面没指定，这个时候加上exchange
         return getExchanger(url).connect(url, handler);
     }
 
-    public static Exchanger getExchanger(URL url) {
+    public static Exchanger getExchanger(URL url) {// tony: 获取 Exchanger，默认为 HeaderExchanger。可参数配置
         String type = url.getParameter(Constants.EXCHANGER_KEY, Constants.DEFAULT_EXCHANGER);
         return getExchanger(type);
     }
 
-    public static Exchanger getExchanger(String type) {
+    public static Exchanger getExchanger(String type) {// SPI获取 Exchanger实例
         return ExtensionLoader.getExtensionLoader(Exchanger.class).getExtension(type);
     }
 

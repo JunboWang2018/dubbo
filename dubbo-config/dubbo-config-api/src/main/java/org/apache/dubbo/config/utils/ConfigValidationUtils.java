@@ -165,37 +165,37 @@ public class ConfigValidationUtils {
      */
     private static final Pattern PATTERN_KEY = Pattern.compile("[*,\\-._0-9a-zA-Z]+");
 
-
+    // 加载注册中心
     public static List<URL> loadRegistries(AbstractInterfaceConfig interfaceConfig, boolean provider) {
         // check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
         ApplicationConfig application = interfaceConfig.getApplication();
         List<RegistryConfig> registries = interfaceConfig.getRegistries();
-        if (CollectionUtils.isNotEmpty(registries)) {
+        if (CollectionUtils.isNotEmpty(registries)) {// 此处是加载对应的注册中心配置
             for (RegistryConfig config : registries) {
                 String address = config.getAddress();
                 if (StringUtils.isEmpty(address)) {
-                    address = ANYHOST_VALUE;
+                    address = ANYHOST_VALUE;// tony:若 address 为空，则将其设为 0.0.0.0
                 }
-                if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+                if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {// tony:检测 address 是否合法
                     Map<String, String> map = new HashMap<String, String>();
-                    AbstractConfig.appendParameters(map, application);
-                    AbstractConfig.appendParameters(map, config);
+                    AbstractConfig.appendParameters(map, application); // 添加 ApplicationConfig 中的字段信息到 map 中
+                    AbstractConfig.appendParameters(map, config);// 添加 RegistryConfig 字段信息到 map 中
                     map.put(PATH_KEY, RegistryService.class.getName());
-                    AbstractInterfaceConfig.appendRuntimeParameters(map);
-                    if (!map.containsKey(PROTOCOL_KEY)) {
+                    AbstractInterfaceConfig.appendRuntimeParameters(map);// tony:添加 dubbo版本信息、pid 等信息到 map 中
+                    if (!map.containsKey(PROTOCOL_KEY)) {// 添加协议信息到map
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
-                    }
-                    List<URL> urls = UrlUtils.parseURLs(address, map);
-
+                    }// 添加 path、pid，protocol 等信息到 map 中
+                    List<URL> urls = UrlUtils.parseURLs(address, map);// address 可能包含多个注册中心 ip,因此解析得到的是一个 URL 列表
+                    // TONY：此处url示例redis://127.0.0.1:6379/org.apache.dubbo.registry.RegistryService?application=sms-service&dubbo=2.0.2&pid=9952&qos.enable=false&release=2.7.7&timestamp=1593970675270
                     for (URL url : urls) {
-
+                        // tony：url重构后示例registry://127.0.0.1:6379/org.apache.dubbo.registry.RegistryService?application=sms-service&dubbo=2.0.2&pid=9952&qos.enable=false&registry=redis&release=2.7.7&timestamp=1593970675270
                         url = URLBuilder.from(url)
-                                .addParameter(REGISTRY_KEY, url.getProtocol())
-                                .setProtocol(extractRegistryType(url))
-                                .build();
-                        if ((provider && url.getParameter(REGISTER_KEY, true))
-                                || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
+                                .addParameter(REGISTRY_KEY, url.getProtocol())// URL中加入registry参数
+                                .setProtocol(extractRegistryType(url))// 将 URL 协议头设置为 registry
+                                .build();// 通过判断条件，决定是否添加 url 到 registryList 中。
+                        if ((provider && url.getParameter(REGISTER_KEY, true))// (服务提供者 && register = true 或 null)
+                                || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) { //  || (非服务提供者 && subscribe = true 或 null)
                             registryList.add(url);
                         }
                     }

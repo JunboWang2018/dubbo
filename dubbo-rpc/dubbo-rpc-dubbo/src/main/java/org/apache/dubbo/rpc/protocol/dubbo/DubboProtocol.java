@@ -104,18 +104,18 @@ public class DubboProtocol extends AbstractProtocol {
     private final Map<String, List<ReferenceCountExchangeClient>> referenceClientMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
     private final Set<String> optimizers = new ConcurrentHashSet<>();
-
+    /** 这个handler就是在dubbo协议下，收到数据之后，如何处理 */
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
 
         @Override
         public CompletableFuture<Object> reply(ExchangeChannel channel, Object message) throws RemotingException {
-
+            // 判断消息类型
             if (!(message instanceof Invocation)) {
                 throw new RemotingException(channel, "Unsupported request: "
                         + (message == null ? null : (message.getClass().getName() + ": " + message))
                         + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
             }
-
+            // 这个就是请求过来的Invocation 参数，服务端收到之后，根据这个信息，去调用指定的方法
             Invocation inv = (Invocation) message;
             Invoker<?> invoker = getInvoker(channel, inv);
             // need to consider backward-compatibility if it's a callback
@@ -142,16 +142,16 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
             RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
-            Result result = invoker.invoke(inv);
-            return result.thenApply(Function.identity());
+            Result result = invoker.invoke(inv);// 调用具体的方法实现
+            return result.thenApply(Function.identity());// 返回Result中那个future
         }
-
+        // tony: received 收到数据会怎么办？
         @Override
         public void received(Channel channel, Object message) throws RemotingException {
-            if (message instanceof Invocation) {
+            if (message instanceof Invocation) {// 如果消息的类型是Invocation，则代表是一个请求
                 reply((ExchangeChannel) channel, message);
 
-            } else {
+            } else {// 如果非Invocation则代表是一个服务端的响应
                 super.received(channel, message);
             }
         }
@@ -232,7 +232,7 @@ public class DubboProtocol extends AbstractProtocol {
                 NetUtils.filterLocalHost(channel.getUrl().getIp())
                         .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
-
+    // tony：服务端根据 Invocation的描述信息，找到对应的service实现，找到对应的invoker进行调用
     Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException {
         boolean isCallBackServiceInvoke = false;
         boolean isStubServiceInvoke = false;
@@ -251,14 +251,14 @@ public class DubboProtocol extends AbstractProtocol {
             path += "." + inv.getObjectAttachments().get(CALLBACK_SERVICE_KEY);
             inv.getObjectAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
         }
-
+        // 这个key的生成和服务暴露的时候生成的key，规则一样
         String serviceKey = serviceKey(
                 port,
                 path,
                 (String) inv.getObjectAttachments().get(VERSION_KEY),
                 (String) inv.getObjectAttachments().get(GROUP_KEY)
         );
-        DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
+        DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);// tony:根据服务信息，找到对应的Invoker
 
         if (exporter == null) {
             throw new RemotingException(channel, "Not found exported service: " + serviceKey + " in " + exporterMap.keySet() + ", may be version or group mismatch " +
@@ -282,11 +282,11 @@ public class DubboProtocol extends AbstractProtocol {
         URL url = invoker.getUrl();
 
         // export service.
-        String key = serviceKey(url);
-        DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
-        exporterMap.put(key, exporter);
-
-        //export an stub service for dispatching event
+        String key = serviceKey(url);// 获取服务标识，理解成服务坐标也行。由服务组名，服务名，服务版本号以及端口组成。比如：com.tony.dubbo.sms.api.SmsService:20880
+        DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);// 创建 DubboExporter
+        exporterMap.put(key, exporter);// 将 <key, exporter> 键值对放入缓存中。 后面收到请求时，根据这个映射关系，调用相关的invoker
+        // 加个缓存保存起来
+        //export an stub service for dispatching event  // 本地存根相关代码
         Boolean isStubSupportEvent = url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(IS_CALLBACK_SERVICE, false);
         if (isStubSupportEvent && !isCallbackservice) {
@@ -299,59 +299,59 @@ public class DubboProtocol extends AbstractProtocol {
 
             }
         }
-
+        // 启动服务器
         openServer(url);
-        optimizeSerialization(url);
+        optimizeSerialization(url);// 优化序列化
 
         return exporter;
     }
 
     private void openServer(URL url) {
-        // find server.
+        // find server. // 获取 host:port，并将其作为服务器实例的 key，用于标识当前的服务器实例
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
         if (isServer) {
-            ProtocolServer server = serverMap.get(key);
-            if (server == null) {
+            ProtocolServer server = serverMap.get(key); // 访问缓存
+            if (server == null) { // tony:为什么需要判断：在同一台机器上（单网卡），同一个端口上仅允许启动一个服务器实例
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
-                        serverMap.put(key, createServer(url));
+                        serverMap.put(key, createServer(url));// 创建服务器实例，并保存
                     }
                 }
             } else {
                 // server supports reset, use together with override
-                server.reset(url);
+                server.reset(url);// 服务器已创建，则根据 url 中的配置重置服务器
             }
         }
     }
 
     private ProtocolServer createServer(URL url) {
-        url = URLBuilder.from(url)
+        url = URLBuilder.from(url)// 此处开始往URL里面加一些服务导出相关的参数，比如编解码器、心跳参数...
                 // send readonly event when server closes, it's enabled by default
                 .addParameterIfAbsent(CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString())
                 // enable heartbeat by default
-                .addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT))
-                .addParameter(CODEC_KEY, DubboCodec.NAME)
+                .addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT))// 添加心跳检测配置到 url 中
+                .addParameter(CODEC_KEY, DubboCodec.NAME) // tony: 配置编解码器的名称
                 .build();
         String str = url.getParameter(SERVER_KEY, DEFAULT_REMOTING_SERVER);
-
+        //tony:检测底层网络框架是否被支持：默认为 netty， [netty, mina]
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
         }
 
         ExchangeServer server;
-        try {
-            server = Exchangers.bind(url, requestHandler);
+        try {// 调用bind方法创建 ExchangeServer。 requestHandler代表具体rpc收到请求后的处理逻辑
+            server = Exchangers.bind(url, requestHandler);//tony: 此处是静态方法，都是根据URL去做具体逻辑的
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
-
+        // 获取 client 参数，可指定 netty，mina
         str = url.getParameter(CLIENT_KEY);
-        if (str != null && str.length() > 0) {
+        if (str != null && str.length() > 0) {// 获取所有的 Transporter 实现类名称集合，比如 supportedTypes = [netty, mina]
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();
-            if (!supportedTypes.contains(str)) {
+            if (!supportedTypes.contains(str)) {// 如果不支持这种Transporter，则抛出异常
                 throw new RpcException("Unsupported client type: " + str);
             }
         }
@@ -400,31 +400,31 @@ public class DubboProtocol extends AbstractProtocol {
     public <T> Invoker<T> protocolBindingRefer(Class<T> serviceType, URL url) throws RpcException {
         optimizeSerialization(url);
 
-        // create rpc invoker.
+        // create rpc invoker. 创建一个dubboInvoker
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
 
         return invoker;
     }
-
-    private ExchangeClient[] getClients(URL url) {
-        // whether to share connection
-
+    /** 根据URL参数中的连接数，返回对应数量的的client实例。ExchangeClient 实际上并不具备通信能力，需要基于更底层的客户端实例进行通信 */
+    private ExchangeClient[] getClients(URL url) {// url示例：dubbo://192.168.97.1:20880/com.study.dubbo.sms.api.SmsService?anyhost=true&application=order-service&check=false&deprecated=false&dubbo=2.0.2&dynamic=true&generic=false&init=false&interface=com.study.dubbo.sms.api.SmsService&methods=send&pid=14932&qos.enable=false&register.ip=192.168.1.168&release=2.7.7&remote.application=sms-service&side=consumer&sticky=false&timeout=1000&timestamp=1594134892724
+        // whether to share connection// 是否共享连接
+        // 这里共享连接的场景是针对一台服务器，同样的端口，部署了多个service的情况下
         boolean useShareConnect = false;
-
+        // tony: 共享的意思是：同样的IP和端口，默认消费者和服务端公用一个网络连接。 不共享的意思是，客户端会与每个service实例所在的服务端建立连接。
         int connections = url.getParameter(CONNECTIONS_KEY, 0);
         List<ReferenceCountExchangeClient> shareClients = null;
-        // if not configured, connection is shared, otherwise, one connection for one service
+        // if not configured, connection is shared, otherwise, one connection for one service 没有配置connections擦描述及默认共享连接。
         if (connections == 0) {
             useShareConnect = true;
 
             /*
-             * The xml configuration should have a higher priority than properties.
+             * The xml configuration should have a higher priority than properties. // 获取共享客户端
              */
             String shareConnectionsStr = url.getParameter(SHARE_CONNECTIONS_KEY, (String) null);
             connections = Integer.parseInt(StringUtils.isBlank(shareConnectionsStr) ? ConfigUtils.getProperty(SHARE_CONNECTIONS_KEY,
                     DEFAULT_SHARE_CONNECTIONS) : shareConnectionsStr);
-            shareClients = getSharedClient(url, connections);
+            shareClients = getSharedClient(url, connections);// 底层也是共享
         }
 
         ExchangeClient[] clients = new ExchangeClient[connections];
@@ -432,7 +432,7 @@ public class DubboProtocol extends AbstractProtocol {
             if (useShareConnect) {
                 clients[i] = shareClients.get(i);
 
-            } else {
+            } else {// 初始化新的客户端。针对这个service，和对应的实例建立一个连接
                 clients[i] = initClient(url);
             }
         }
@@ -447,18 +447,18 @@ public class DubboProtocol extends AbstractProtocol {
      * @param connectNum connectNum must be greater than or equal to 1
      */
     private List<ReferenceCountExchangeClient> getSharedClient(URL url, int connectNum) {
-        String key = url.getAddress();
-        List<ReferenceCountExchangeClient> clients = referenceClientMap.get(key);
-
-        if (checkClientCanUse(clients)) {
-            batchClientRefIncr(clients);
+        String key = url.getAddress(); // key = ip和端口
+        List<ReferenceCountExchangeClient> clients = referenceClientMap.get(key); // 获取带有“引用计数”功能的 ExchangeClient
+        // referenceClientMap 这个是针对不同的服务器缓存一个对应的客户端client信息。
+        if (checkClientCanUse(clients)) { // 检测连接，是否可用，只要有一个客户机不可用，就需要用可用的客户机替换不可用的客户机。
+            batchClientRefIncr(clients); // 增加引用计数
             return clients;
         }
 
-        locks.putIfAbsent(key, new Object());
+        locks.putIfAbsent(key, new Object());// 不同的服务器加一个锁
         synchronized (locks.get(key)) {
             clients = referenceClientMap.get(key);
-            // dubbo check
+            // dubbo check --- DCL双重检查锁
             if (checkClientCanUse(clients)) {
                 batchClientRefIncr(clients);
                 return clients;
@@ -473,7 +473,7 @@ public class DubboProtocol extends AbstractProtocol {
                 referenceClientMap.put(key, clients);
 
             } else {
-                for (int i = 0; i < clients.size(); i++) {
+                for (int i = 0; i < clients.size(); i++) { // tony: 此处就是循环初始化多个新的client。初始化参考initClient
                     ReferenceCountExchangeClient referenceCountExchangeClient = clients.get(i);
                     // If there is a client in the list that is no longer available, create a new one to replace him.
                     if (referenceCountExchangeClient == null || referenceCountExchangeClient.isClosed()) {
@@ -563,18 +563,18 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     /**
-     * Create new connection
+     * Create new connection 和指定的服务器创建新连接
      *
      * @param url
      */
     private ExchangeClient initClient(URL url) {
 
-        // client type setting.
+        // client type setting. 默认底层框架类型使用netty。 通过server 或者 client 参数配置
         String str = url.getParameter(CLIENT_KEY, url.getParameter(SERVER_KEY, DEFAULT_REMOTING_CLIENT));
 
-        url = url.addParameter(CODEC_KEY, DubboCodec.NAME);
+        url = url.addParameter(CODEC_KEY, DubboCodec.NAME); // 配置编解码
         // enable heartbeat by default
-        url = url.addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT));
+        url = url.addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT)); // 增加心跳参数
 
         // BIO is not allowed since it has severe performance issue.
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
@@ -585,11 +585,11 @@ public class DubboProtocol extends AbstractProtocol {
         ExchangeClient client;
         try {
             // connection should be lazy
-            if (url.getParameter(LAZY_CONNECT_KEY, false)) {
+            if (url.getParameter(LAZY_CONNECT_KEY, false)) { // 懒连接的意思就是发数据的时候再去真正建立网络连接
                 client = new LazyConnectExchangeClient(url, requestHandler);
 
             } else {
-                client = Exchangers.connect(url, requestHandler);
+                client = Exchangers.connect(url, requestHandler);// 和指定服务器建立连接。 类似服务提供者的逻辑
             }
 
         } catch (RemotingException e) {

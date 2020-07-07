@@ -23,7 +23,7 @@ import org.apache.dubbo.rpc.cluster.Directory;
 
 /**
  * mock impl
- *
+ * 装饰器 - dubbo spi 自动完成包装
  */
 public class MockClusterWrapper implements Cluster {
 

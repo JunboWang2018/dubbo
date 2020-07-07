@@ -139,9 +139,9 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
                     + ", dubbo version is " + Version.getVersion() + ", this invoker should not be used any longer");
         }
         RpcInvocation invocation = (RpcInvocation) inv;
-        invocation.setInvoker(this);
+        invocation.setInvoker(this);// 设置 Invoker
         if (CollectionUtils.isNotEmptyMap(attachment)) {
-            invocation.addObjectAttachmentsIfAbsent(attachment);
+            invocation.addObjectAttachmentsIfAbsent(attachment);// 设置 attachment
         }
 
         Map<String, Object> contextAttachments = RpcContext.getContext().getObjectAttachments();
@@ -152,14 +152,14 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
              * by the built-in retry mechanism of the Dubbo. The attachment to update RpcContext will no longer work, which is
              * a mistake in most cases (for example, through Filter to RpcContext output traceId and spanId and other information).
              */
-            invocation.addObjectAttachments(contextAttachments);
+            invocation.addObjectAttachments(contextAttachments);// 添加 contextAttachments 到 RpcInvocation#attachment 变量中
         }
 
         invocation.setInvokeMode(RpcUtils.getInvokeMode(url, invocation));
-        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);// 为invocation设置一个id，如果是异步且id不存在的情况下
 
         AsyncRpcResult asyncResult;
-        try {
+        try {// 抽象方法，由子类实现。 此处我们看Dubbo协议下DubboInvoker的实现
             asyncResult = (AsyncRpcResult) doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
@@ -180,13 +180,13 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         } catch (Throwable e) {
             asyncResult = AsyncRpcResult.newDefaultAsyncResult(null, e, invocation);
         }
-        RpcContext.getContext().setFuture(new FutureAdapter(asyncResult.getResponseFuture()));
+        RpcContext.getContext().setFuture(new FutureAdapter(asyncResult.getResponseFuture()));// FutureAdapter本质还是future
         return asyncResult;
     }
-
+    /** tony:根据参数配置和方法的返回值类型决定调用模式，不同的端口不同的线程池 */
     protected ExecutorService getCallbackExecutor(URL url, Invocation inv) {
         ExecutorService sharedExecutor = ExtensionLoader.getExtensionLoader(ExecutorRepository.class).getDefaultExtension().getExecutor(url);
-        if (InvokeMode.SYNC == RpcUtils.getInvokeMode(getUrl(), inv)) {
+        if (InvokeMode.SYNC == RpcUtils.getInvokeMode(getUrl(), inv)) {// tony: 同步执行模式
             return new ThreadlessExecutor(sharedExecutor);
         } else {
             return sharedExecutor;
