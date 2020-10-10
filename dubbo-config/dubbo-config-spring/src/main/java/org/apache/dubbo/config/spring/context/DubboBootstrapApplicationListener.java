@@ -56,7 +56,7 @@ public class DubboBootstrapApplicationListener extends OneTimeExecutionApplicati
     }
 
     private void onContextRefreshedEvent(ContextRefreshedEvent event) {
-        dubboBootstrap.start();
+        dubboBootstrap.start(); // tony: 启动时候触发执行
     }
 
     private void onContextClosedEvent(ContextClosedEvent event) {

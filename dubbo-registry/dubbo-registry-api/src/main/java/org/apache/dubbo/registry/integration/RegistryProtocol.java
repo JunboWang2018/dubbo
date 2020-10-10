@@ -251,11 +251,11 @@ public class RegistryProtocol implements Protocol {
 
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
-        String key = getCacheKey(originInvoker);// tony: // 访问缓存
+        String key = getCacheKey(originInvoker);// tony: // 访问缓存，如果之前没有导出 --
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);// 创建 Invoker 为委托类对象
-            return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker); // 调用 protocol 的 export 方法导出服务
+            return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker); // 调用 具体服务所使用protocol 的 export 方法导出服务
         });
     }
 
@@ -472,7 +472,7 @@ public class RegistryProtocol implements Protocol {
         }
         directory.buildRouterChain(subscribeUrl);// tony： 前面那个group这些参数就是用来做路由的，此处就是directory构建对应的规则
         directory.subscribe(toSubscribeUrl(subscribeUrl)); // subscribeUrl这个URL就是为了传参给directory去订阅
-        // tony: 此处就要看到 AbstractClusterInvoker
+        // tony: 此处就要看到 AbstractClusterInvoker -- 真正的被代理的invoker对象
         Invoker<T> invoker = cluster.join(directory);// tony：此处就是根据服务目录信息，构建一个AbstractClusterInvoker子类的实例。用于服务调用【包含负载均衡、包含集群调用下拦截器等功能】
         List<RegistryProtocolListener> listeners = findRegistryProtocolListeners(url);
         if (CollectionUtils.isEmpty(listeners)) {

@@ -574,9 +574,9 @@ public abstract class AbstractConfig implements Serializable {
      * @see ConfigManager#addConfig(AbstractConfig)
      * @since 2.7.5
      */
-    @PostConstruct
+    @PostConstruct // 初始化之后，会执行的方法
     public void addIntoConfigManager() {
-        ApplicationModel.getConfigManager().addConfig(this);
+        ApplicationModel.getConfigManager().addConfig(this); //
     }
 
     @Override

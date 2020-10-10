@@ -389,7 +389,7 @@ public class UrlUtils {
             return categories.contains(category);
         }
     }
-
+    /** 匹配url */
     public static boolean isMatch(URL consumerUrl, URL providerUrl) {
         String consumerInterface = consumerUrl.getServiceInterface();
         String providerInterface = providerUrl.getServiceInterface();

@@ -71,6 +71,6 @@ public class InvokerInvocationHandler implements InvocationHandler {
             rpcInvocation.put(Constants.METHOD_MODEL, consumerModel.getMethodModel(method));
         }
         // tony:注意： 此处invoker返回的是一个dubbo封装的result对象。 所以通过recreate方法才能获取正在方法执行的结果。目前dubbo改为异步调用，此处result可理解为一个future
-        return invoker.invoke(rpcInvocation).recreate();// recreate - 将dubbo rpc返回的结果 重构为方法返回值所对应的结果
+        return invoker.invoke(rpcInvocation).recreate();// recreate - 将dubbo rpc返回的结果 重构为方法返回值所对应的类型
     }
 }

@@ -25,7 +25,7 @@ public interface Lifecycle {
 
     /**
      * Initialize the component before {@link #start() start}
-     * // SPI加载的时候初始化
+     * // SPI加载的时候初始化 --
      * @return current {@link Lifecycle}
      * @throws IllegalStateException
      */

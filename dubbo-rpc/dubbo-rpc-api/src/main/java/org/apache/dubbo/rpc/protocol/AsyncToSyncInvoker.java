@@ -49,7 +49,7 @@ public class AsyncToSyncInvoker<T> implements Invoker<T> {
     // tony：如果是同步调用模式，则需要等待结果返回
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
-        Result asyncResult = invoker.invoke(invocation);
+        Result asyncResult = invoker.invoke(invocation);// 调用 被包装的invoker
 
         try {
             if (InvokeMode.SYNC == ((RpcInvocation) invocation).getInvokeMode()) {
@@ -58,7 +58,7 @@ public class AsyncToSyncInvoker<T> implements Invoker<T> {
                  * must call {@link java.util.concurrent.CompletableFuture#get(long, TimeUnit)} because
                  * {@link java.util.concurrent.CompletableFuture#get()} was proved to have serious performance drop.
                  */
-                asyncResult.get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
+                asyncResult.get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS); // 此处 阻塞等待结果
             }
         } catch (InterruptedException e) {
             throw new RpcException("Interrupted unexpectedly while waiting for remote result to return!  method: " +

@@ -36,7 +36,7 @@ public class ChannelHandlerAdapter implements ChannelHandler {
     @Override
     public void sent(Channel channel, Object message) throws RemotingException {
     }
-
+    /** tony: 只要收到数据，这个方法就会被触发 */
     @Override
     public void received(Channel channel, Object message) throws RemotingException {
     }

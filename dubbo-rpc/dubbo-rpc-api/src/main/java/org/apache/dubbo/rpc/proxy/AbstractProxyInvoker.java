@@ -77,7 +77,7 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
     @Override
     public void destroy() {
     }
-
+    /** DUBBO invoke 都是返回 result  */
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         try {

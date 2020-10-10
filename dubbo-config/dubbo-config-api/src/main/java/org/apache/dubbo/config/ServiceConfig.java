@@ -190,9 +190,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             bootstrap.init();
         }
 
-        checkAndUpdateSubConfigs();
+        checkAndUpdateSubConfigs();// 动态更新、spring动态更新配置
 
-        //init serviceMetadata tony： 服务提供者的元信息 - 配置信息
+        //init serviceMetadata tony： 服务提供者的元信息 - 配置信息 -- 2.7.* 元数据中心
         serviceMetadata.setVersion(version);
         serviceMetadata.setGroup(group);
         serviceMetadata.setDefaultGroup(group);
@@ -485,7 +485,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                         if (StringUtils.isNotEmpty(proxy)) {
                             registryURL = registryURL.addParameter(PROXY_KEY, proxy);
                         }
-                        // tony:为服务提供类(ref)生成 Invoker
+                        // tony:为服务提供类(ref具体实现类)生成 Invoker
                         Invoker<?> invoker = PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(EXPORT_KEY, url.toFullString()));
                         DelegateProviderMetaDataInvoker wrapperInvoker = new DelegateProviderMetaDataInvoker(invoker, this);
                         // 导出服务，并生成 Exporter -- 注意：这个地方还没到具体的服务协议，而是一个RegistryProtocol

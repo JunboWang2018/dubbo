@@ -355,7 +355,7 @@ public class RedisRegistry extends FailbackRegistry {
             }
         }
     }
-
+    /** 订阅-获取所有服务对应的实例，然后调用 doNotify 通知*/
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         String service = toServicePath(url);
@@ -416,7 +416,7 @@ public class RedisRegistry extends FailbackRegistry {
             doNotify(jedis, Collections.singletonList(key), entry.getKey(), new HashSet<>(entry.getValue()));
         }
     }
-
+    /** 通过NotifyListener回调通知 */
     private void doNotify(Jedis jedis, Collection<String> keys, URL url, Collection<NotifyListener> listeners) {
         if (keys == null || keys.isEmpty()
                 || listeners == null || listeners.isEmpty()) {
@@ -438,13 +438,13 @@ public class RedisRegistry extends FailbackRegistry {
                 continue;
             }
             List<URL> urls = new ArrayList<>();
-            Map<String, String> values = jedis.hgetAll(key);
+            Map<String, String> values = jedis.hgetAll(key); // 看看有多少实例url
             if (CollectionUtils.isNotEmptyMap(values)) {
                 for (Map.Entry<String, String> entry : values.entrySet()) {
                     URL u = URL.valueOf(entry.getKey());
                     if (!u.getParameter(DYNAMIC_KEY, true)
                             || Long.parseLong(entry.getValue()) >= now) {
-                        if (UrlUtils.isMatch(url, u)) {
+                        if (UrlUtils.isMatch(url, u)) {// TONY: 这一步很重要，根据url的参数对服务提供者实例进行了过滤【版本、group】
                             urls.add(u);
                         }
                     }

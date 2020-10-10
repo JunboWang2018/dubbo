@@ -380,7 +380,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
         addConfig(config, false);
     }
 
-    protected void addConfig(AbstractConfig config, boolean unique) {
+    protected void addConfig(AbstractConfig config, boolean unique) {// tony: 设置数据的地方
         if (config == null) {
             return;
         }
@@ -481,7 +481,7 @@ public class ConfigManager extends LifecycleAdapter implements FrameworkExt {
             });
         }
 
-        String key = getId(config);
+        String key = getId(config); // Tony: BUG, 预计2.7.8修复 -- 多版本 、多实现 2.7.7 版本只会导出一个服务
 
         C existedConfig = configsMap.get(key);
 

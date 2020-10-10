@@ -271,7 +271,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
-        if (shouldJvmRefer(map)) {
+        if (shouldJvmRefer(map)) {// injvm
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
@@ -362,7 +362,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             URL consumerURL = new URL(CONSUMER_PROTOCOL, map.remove(REGISTER_IP_KEY), 0, map.get(INTERFACE_KEY), map);
             metadataService.publishServiceDefinition(consumerURL);
         }
-        // create service proxy tony：创建一个代理对象。这恶
+        // create service proxy tony：创建一个代理对象。接口的实现
         return (T) PROXY_FACTORY.getProxy(invoker, ProtocolUtils.isGeneric(generic));
     }
 

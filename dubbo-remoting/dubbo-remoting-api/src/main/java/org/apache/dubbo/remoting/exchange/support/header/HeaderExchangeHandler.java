@@ -107,7 +107,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
                         res.setStatus(Response.SERVICE_ERROR);
                         res.setErrorMessage(StringUtils.toString(t));
                     }
-                    channel.send(res);// tony: 最后发送response对象
+                    channel.send(res);// tony: 发送方法调用执行后的结果，最后发送response对象
                 } catch (RemotingException e) {
                     logger.warn("Send result to consumer failed, channel is " + channel + ", msg is " + e);
                 }

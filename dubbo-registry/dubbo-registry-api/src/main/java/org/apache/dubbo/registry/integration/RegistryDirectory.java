@@ -182,7 +182,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         setConsumerUrl(url);
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
         serviceConfigurationListener = new ReferenceConfigurationListener(this, url);
-        registry.subscribe(url, this);
+        registry.subscribe(url, this); // 回调 --当有服务发生变动的时候，调用NotifyListener
     }
 
     public void unSubscribe(URL url) {
@@ -224,7 +224,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             logger.warn("Failed to destroy service " + serviceKey, t);
         }
     }
-    /** 接收注册中心返回的对应实例信息 */
+    /** tony:接收注册中心返回的对应实例信息，调用这个方法之前，在注册中心实现里面完成了相关服务提供者实例的过滤 */
     @Override
     public synchronized void notify(List<URL> urls) {
         Map<String, List<URL>> categoryUrls = urls.stream()
@@ -232,7 +232,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                 .filter(this::isValidCategory)
                 .filter(this::isNotCompatibleFor26x)
                 .collect(Collectors.groupingBy(this::judgeCategory));
-        // tony:此处接收到的URL就是注册中心上面写的。按服务提供者不同实现的group参数做了分组
+        // tony:此处接收到的URL就是注册中心上面写的。【还有一种可能就是有服务实例，但是不符合消费者的要求，比如版本不匹配、实现不匹配】
         List<URL> configuratorURLs = categoryUrls.getOrDefault(CONFIGURATORS_CATEGORY, Collections.emptyList());
         this.configurators = Configurator.toConfigurators(configuratorURLs).orElse(this.configurators);
         // 根据配置的路由规则，添加对应的路由
@@ -308,7 +308,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             }
             if (invokerUrls.isEmpty()) {
                 return;
-            }// 将 url 转成 Invoker
+            }// tony: 将 url 转成 Invoker , url
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -451,7 +451,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     } else {
                         enabled = url.getParameter(ENABLED_KEY, true);
                     }
-                    if (enabled) { // tony: 调用 protocol.refer 获取 Invoker
+                    if (enabled) { // tony: 调用 protocol.refer 获取 Invoker -- 具体的协议
                         invoker = new InvokerDelegate<>(protocol.refer(serviceType, url), url, providerUrl);
                     }
                 } catch (Throwable t) {

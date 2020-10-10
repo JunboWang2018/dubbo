@@ -281,7 +281,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AbstractAnnotationBean
         }
     }
 
-
+    // 如果 服务引用 本地 一个service实现
     private void exportServiceBeanIfNecessary(String referencedBeanName) {
         if (existsServiceBean(referencedBeanName)) {
             ServiceBean serviceBean = getServiceBean(referencedBeanName);

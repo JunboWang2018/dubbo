@@ -497,16 +497,16 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     /**
-     * Initialize
+     * Initialize 初始化的过程， 用的时候再看
      */
     private void initialize() {
         if (!initialized.compareAndSet(false, true)) {
             return;
         }
 
-        ApplicationModel.initFrameworkExts();
+        ApplicationModel.initFrameworkExts(); // 初始化 -- 用的时候，再去看
 
-        startConfigCenter();
+        startConfigCenter(); // 配置中心
 
         useRegistryAsConfigCenterIfNecessary();
 
@@ -739,13 +739,13 @@ public class DubboBootstrap extends GenericEventListener {
      * Start the bootstrap
      */
     public DubboBootstrap start() {
-        if (started.compareAndSet(false, true)) {
+        if (started.compareAndSet(false, true)) {// CAS 防止重复调用
             ready.set(false);
             initialize();
             if (logger.isInfoEnabled()) {
                 logger.info(NAME + " is starting...");
             }
-            // 1. export Dubbo Services
+            // 1. export Dubbo Services 导出 dubbo 服务提供者【创建网络服务，接受消费者访问】
             exportServices();
 
             // Not only provider register
@@ -927,9 +927,9 @@ public class DubboBootstrap extends GenericEventListener {
     }
 
     private void exportServices() {
-        configManager.getServices().forEach(sc -> {
+        configManager.getServices().forEach(sc -> {// 遍历所有 服务提供者 用了service 注解，所创建 serviceBean
             // TODO, compatible with ServiceConfig.export()
-            ServiceConfig serviceConfig = (ServiceConfig) sc;
+            ServiceConfig serviceConfig = (ServiceConfig) sc;// serviceBean
             serviceConfig.setBootstrap(this);
             // 准备导出服务
             if (exportAsync) {

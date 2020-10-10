@@ -145,7 +145,7 @@ public class DubboProtocol extends AbstractProtocol {
             Result result = invoker.invoke(inv);// 调用具体的方法实现
             return result.thenApply(Function.identity());// 返回Result中那个future
         }
-        // tony: received 收到数据会怎么办？
+        // tony: received 收到数据会怎么办？ 处理完毕， 不管返回值
         @Override
         public void received(Channel channel, Object message) throws RemotingException {
             if (message instanceof Invocation) {// 如果消息的类型是Invocation，则代表是一个请求
@@ -326,7 +326,7 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
     }
-
+    /** tony: 创建服务 -- 启动网络服务 */
     private ProtocolServer createServer(URL url) {
         url = URLBuilder.from(url)// 此处开始往URL里面加一些服务导出相关的参数，比如编解码器、心跳参数...
                 // send readonly event when server closes, it's enabled by default

@@ -39,7 +39,7 @@ import java.util.function.Function;
  * 1. {@link AsyncRpcResult}, it's a {@link CompletionStage} whose underlying value signifies the return value of an RPC call.
  * 2. {@link AppResponse}, it inevitably inherits {@link CompletionStage} and {@link Future}, but you should never treat AppResponse as a type of Future,
  *    instead, it is a normal concrete type.
- *
+ *  tony: 你可以理解为 result 就是一个异步的future
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
  * @see AppResponse

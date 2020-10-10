@@ -25,6 +25,7 @@ import org.apache.dubbo.config.ProviderConfig;
 import org.apache.dubbo.config.RegistryConfig;
 
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ImportResource;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
